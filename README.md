@@ -1,7 +1,6 @@
 # Verifying Smart Contract Access Control Using K Framework
-## Technical Report
 
-### Table of Contents
+## Table of Contents
 1. [Introduction](#introduction)
 2. [Problem Statement](#problem-statement)
 3. [Technical Analysis](#technical-analysis)
@@ -28,12 +27,14 @@ Smart contracts handling financial transactions must implement robust access con
 
 The initial vulnerable implementation lacks access control:
 
+```solidity
 function withdraw(uint256 amount) public {
     require(balance >= amount);
     (bool success, ) = msg.sender.call{value: amount}("");
     require(success);
     balance -= amount;
 }
+```
 
 Key vulnerabilities:
 - No ownership verification
@@ -44,27 +45,30 @@ Key vulnerabilities:
 
 The K Framework rule implements formal verification:
 
+```k
 rule [withdraw]:
- withdraw(Amount) => . ... 
- MSG_SENDER 
- OWNER 
- BAL => BAL -Int Amount 
+<k> withdraw(Amount) => . ... </k>
+<caller> MSG_SENDER </caller>
+<owner> OWNER </owner>
+<balance> BAL => BAL -Int Amount </balance>
 requires MSG_SENDER ==Int OWNER
 andBool BAL >=Int Amount
 andBool Amount >Int 0
+```
 
 ## Implementation Details
 
 ### Components Breakdown
 
 1. **State Configuration**
-   - ``: Represents the computational state
-   - ``: Current transaction sender
-   - ``: Contract owner address
-   - ``: Contract balance
+   - `<k>`: Represents the computational state
+   - `<caller>`: Current transaction sender
+   - `<owner>`: Contract owner address
+   - `<balance>`: Contract balance
 
 2. **Conditions**
-      requires MSG_SENDER ==Int OWNER
+   ```k
+   requires MSG_SENDER ==Int OWNER
    andBool BAL >=Int Amount
    andBool Amount >Int 0
    ```
@@ -75,14 +79,15 @@ andBool Amount >Int 0
 
 3. **State Transition**
    ```k
-    BAL => BAL -Int Amount 
+   <balance> BAL => BAL -Int Amount </balance>
    ```
    Represents the balance reduction after successful withdrawal
 
 ### Secure Implementation
 
 The corrected Solidity implementation:
-solidity
+
+```solidity
 contract Safe {
     address public owner;
     uint256 public balance;
@@ -124,12 +129,12 @@ Key security features:
 
 ### Test Cases
 
-| Test Scenario | Expected Result | Actual Result |
-|---------------|-----------------|---------------|
-| Owner Withdrawal | Success | ✓ Pass |
-| Non-owner Withdrawal | Revert | ✓ Pass |
-| Excess Amount | Revert | ✓ Pass |
-| Zero Amount | Revert | ✓ Pass |
+| Test Scenario         | Expected Result | Actual Result |
+|-----------------------|-----------------|---------------|
+| Owner Withdrawal      | Success         | ✓ Pass        |
+| Non-owner Withdrawal  | Revert          | ✓ Pass        |
+| Excess Amount         | Revert          | ✓ Pass        |
+| Zero Amount           | Revert          | ✓ Pass        |
 
 ## Conclusion
 
@@ -138,27 +143,3 @@ The K Framework successfully verifies the access control mechanisms in smart con
 1. Mathematical proof of correctness
 2. Complete coverage of edge cases
 3. Immutable security guarantees
-
-### Recommendations
-
-1. Always implement access control modifiers
-2. Use formal verification for critical functions
-3. Include explicit error messages
-4. Validate all numerical operations
-5. Follow check-effects-interaction pattern
-
-### Future Work
-
-1. Extend verification to complex DeFi protocols
-2. Develop automated testing frameworks
-3. Implement real-time verification tools
-
----
-
-**References**
-
-1. K Framework Documentation: [https://github.com/kframework/k](https://github.com/kframework/k)
-2. Ethereum Yellow Paper
-3. Smart Contract Best Practices: [https://consensys.github.io/smart-contract-best-practices/](https://consensys.github.io/smart-contract-best-practices/)
-
-*Note: This report was generated for educational purposes and should be validated against current security best practices before implementation in production environments.*
